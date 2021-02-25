@@ -37,15 +37,9 @@ public class PhoneCamera : MonoBehaviour
         returnButton.gameObject.SetActive(false);
         scanFrame.SetActive(false);
 
-        #region For Testing Only
-        //decodedPanel.SetActive(false);
-        #endregion
-
         isQuit = false;
 		defaultBackground = cameraImage.texture;
         cameraImage.gameObject.SetActive(false); //Only show the cameraImage when in QR scanning mode
-
-        Screen.sleepTimeout = SleepTimeout.NeverSleep; // Set the device's screen to never go to sleep
 
         qrThread = new Thread(DecodeQR); //Start a thread for decoding the QR
 	}
@@ -126,11 +120,13 @@ public class PhoneCamera : MonoBehaviour
     /// <summary>
     public void ActivateQR()
     {
+        // Check permission if it has not been granted already
         if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
         {
             Permission.RequestUserPermission(Permission.Camera);
         }
 
+        // Set the cameraTexure to  the texture recorded by the device's camera if it has not been done already 
         if (cameraTexture == null)
         {
             devices = WebCamTexture.devices;
@@ -169,10 +165,12 @@ public class PhoneCamera : MonoBehaviour
 
         if (cameraTexture != null)
         {
+            Screen.sleepTimeout = SleepTimeout.NeverSleep; // Set the device's screen to never go to sleep
+
             cameraTexture.Play();
             width = cameraTexture.width;
             height = cameraTexture.height;
-            cameraImage.texture = cameraTexture; // Set the texture
+            cameraImage.texture = cameraTexture; // Set the texture displayed on screen to the live cameraTexture
             cameraImage.gameObject.SetActive(true);
 
             if (!qrThread.IsAlive) //Start the thread if it has not been started
@@ -184,10 +182,6 @@ public class PhoneCamera : MonoBehaviour
             qRButton.gameObject.SetActive(false);
             returnButton.gameObject.SetActive(true);
             scanFrame.SetActive(true);
-
-            #region For testing only
-            decodedPanel.SetActive(true);
-            #endregion
         }
     }
 
@@ -201,16 +195,14 @@ public class PhoneCamera : MonoBehaviour
         {
             if (cameraImage)
             {
+                Screen.sleepTimeout = SleepTimeout.SystemSetting; // Set the device's aleep time to the default system setting
+
                 cameraImage.gameObject.SetActive(false);
                 cameraImage.texture = defaultBackground;
 
                 qRButton.gameObject.SetActive(true);
                 returnButton.gameObject.SetActive(false);
                 scanFrame.SetActive(false);
-
-                #region For testing only
-                //decodedPanel.SetActive(false);
-                #endregion
             }
             cameraTexture.Pause();
         }
