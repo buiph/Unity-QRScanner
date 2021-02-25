@@ -2,11 +2,13 @@
 using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Android;
 using ZXing;
 
 //THIS CLASS IS USING THE DEVICE'S REAR CAMERA TO RECORD AND DISPLAY AN IMAGE ON SCREEN AND DECODING ANY QR CODE IN IT 
 public class PhoneCamera : MonoBehaviour
 {
+    WebCamDevice[] devices;
     private bool camAvailable;
 	private WebCamTexture cameraTexture;
 	private Texture defaultBackground;
@@ -36,49 +38,16 @@ public class PhoneCamera : MonoBehaviour
         scanFrame.SetActive(false);
 
         #region For Testing Only
-        decodedPanel.SetActive(false);
+        //decodedPanel.SetActive(false);
         #endregion
 
         isQuit = false;
 		defaultBackground = cameraImage.texture;
         cameraImage.gameObject.SetActive(false); //Only show the cameraImage when in QR scanning mode
-		WebCamDevice[] devices = WebCamTexture.devices;
 
         Screen.sleepTimeout = SleepTimeout.NeverSleep; // Set the device's screen to never go to sleep
 
-        //Check if the device have at least 1 camera
-		if (devices.Length == 0)
-        {
-            Debug.Log("No camera detected");
-            camAvailable = false;
-            return;
-        }
-
-        //Get the texture of the back camera to cameraTexture
-		for (int i = 0; i < devices.Length; i++)
-		{
-			var curr = devices[i];
-
-			if (!curr.isFrontFacing)
-			{
-				cameraTexture = new WebCamTexture(curr.name, Screen.width, Screen.height);
-				break;
-			}
-		}
-        
-        //Check if cameraTexture is valid
-		if (cameraTexture == null)
-        {
-            Debug.Log("No back camera detected");
-            return;
-        }
-        else
-        {
-            camAvailable = true; // Set the camAvailable for future purposes.
-        }
-
-        //Start a thread for decoding the QR
-        qrThread = new Thread(DecodeQR);
+        qrThread = new Thread(DecodeQR); //Start a thread for decoding the QR
 	}
 	
 	// Update is called once per frame
@@ -153,10 +122,51 @@ public class PhoneCamera : MonoBehaviour
 
     /// <summary>
     /// FROM ZXING UNITY DEMO
-    /// This runs whenever the phone camera is enabled
+    /// This runs whenever QR mode is entered
     /// <summary>
-    public void OnEnable()
+    public void ActivateQR()
     {
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
+        {
+            Permission.RequestUserPermission(Permission.Camera);
+        }
+
+        if (cameraTexture == null)
+        {
+            devices = WebCamTexture.devices;
+
+            //Check if the device have at least 1 camera
+            if (devices.Length == 0)
+            {
+                Debug.Log("No camera detected");
+                camAvailable = false;
+                return;
+            }
+
+            //Get the texture of the back camera to cameraTexture
+            for (int i = 0; i < devices.Length; i++)
+            {
+                var curr = devices[i];
+
+                if (!curr.isFrontFacing)
+                {
+                    cameraTexture = new WebCamTexture(curr.name, Screen.width, Screen.height);
+                    break;
+                }
+            }
+            
+            //Check if cameraTexture is valid
+            if (cameraTexture == null)
+            {
+                Debug.Log("No back camera detected");
+                return;
+            }
+            else
+            {
+                camAvailable = true; // Set the camAvailable for future purposes.
+            }
+        }
+
         if (cameraTexture != null)
         {
             cameraTexture.Play();
@@ -183,9 +193,9 @@ public class PhoneCamera : MonoBehaviour
 
     /// <summary>
     /// FROM ZXING UNITY DEMO
-    /// This runs whenever the phone camera is disabled
+    /// This runs whenever QR mode is exited
     /// <summary>
-    public void OnDisable()
+    public void DeactivateQR()
     {
         if (cameraTexture != null)
         {
@@ -199,7 +209,7 @@ public class PhoneCamera : MonoBehaviour
                 scanFrame.SetActive(false);
 
                 #region For testing only
-                decodedPanel.SetActive(false);
+                //decodedPanel.SetActive(false);
                 #endregion
             }
             cameraTexture.Pause();

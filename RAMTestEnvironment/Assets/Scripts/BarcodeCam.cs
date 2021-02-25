@@ -15,6 +15,7 @@
 */
 
 //This class scans QR codes and generate another QR code based on what was scanned
+//NOT CURRENTLY IN USE
 
 using System.Threading;
 
